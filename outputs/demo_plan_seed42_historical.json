@@ -1,0 +1,110 @@
+{
+  "feasible": true,
+  "seed": 42,
+  "time_model": "historical",
+  "depot_zone": 138,
+  "capacities": {
+    "Van 1": 10,
+    "Van 2": 10,
+    "Van 3": 10
+  },
+  "assignments": {
+    "O01": "Van 1",
+    "O02": "Van 1",
+    "O03": "Van 1",
+    "O04": "Van 1",
+    "O05": "Van 1",
+    "O06": "Van 1",
+    "O07": "Van 1",
+    "O08": "Van 2",
+    "O09": "Van 2",
+    "O10": "Van 2",
+    "O11": "Van 2",
+    "O12": "Van 2",
+    "O13": "Van 2",
+    "O15": "Van 3",
+    "O14": "Van 2",
+    "O16": "Van 3",
+    "O17": "Van 3",
+    "O18": "Van 3",
+    "O19": "Van 3",
+    "O20": "Van 3"
+  },
+  "routes": {
+    "Van 1": {
+      "order_ids": [
+        "O03",
+        "O01",
+        "O06",
+        "O04",
+        "O02",
+        "O05",
+        "O07"
+      ],
+      "arrivals_minutes_after_midnight": {
+        "O03": 493.54396533966064,
+        "O01": 526.5439653396606,
+        "O06": 561.2205820083618,
+        "O04": 580.7362909317017,
+        "O02": 600.8962907791138,
+        "O05": 622.4282941818237,
+        "O07": 639.0395879745483
+      },
+      "cost_minutes": 165.03958797454834,
+      "nodes_expanded": 344,
+      "nodes_generated": 592
+    },
+    "Van 2": {
+      "order_ids": [
+        "O10",
+        "O11",
+        "O14",
+        "O12",
+        "O13",
+        "O08",
+        "O09"
+      ],
+      "arrivals_minutes_after_midnight": {
+        "O10": 516.4158592224121,
+        "O11": 582.8463325500488,
+        "O14": 603.7232332229614,
+        "O12": 626.8237733840942,
+        "O13": 650.6543493270874,
+        "O08": 672.6040964126587,
+        "O09": 699.5958986282349
+      },
+      "cost_minutes": 228.59589862823486,
+      "nodes_expanded": 427,
+      "nodes_generated": 794
+    },
+    "Van 3": {
+      "order_ids": [
+        "O17",
+        "O19",
+        "O15",
+        "O18",
+        "O16",
+        "O20"
+      ],
+      "arrivals_minutes_after_midnight": {
+        "O17": 508.6766166687012,
+        "O19": 523.7018103599548,
+        "O15": 557.0125727653503,
+        "O18": 578.4265675544739,
+        "O16": 604.6097416877747,
+        "O20": 673.8741383552551
+      },
+      "cost_minutes": 198.87413835525513,
+      "nodes_expanded": 172,
+      "nodes_generated": 296
+    }
+  },
+  "csp_stats": {
+    "assignments": 20,
+    "backtracks": 0,
+    "nodes": 21,
+    "values_pruned": 19
+  },
+  "reassignments": 0,
+  "synthetic_orders": true
+}

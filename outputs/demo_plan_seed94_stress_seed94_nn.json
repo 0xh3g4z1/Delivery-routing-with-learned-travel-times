@@ -1,0 +1,173 @@
+{
+  "feasible": true,
+  "seed": 94,
+  "scenario": "stress",
+  "time_model": "nn",
+  "depot_zone": 138,
+  "capacities": {
+    "Van 1": 10,
+    "Van 2": 10,
+    "Van 3": 10
+  },
+  "assignments": {
+    "O01": "Van 1",
+    "O02": "Van 2",
+    "O05": "Van 3",
+    "O04": "Van 2",
+    "O06": "Van 3",
+    "O08": "Van 2",
+    "O09": "Van 3",
+    "O11": "Van 1",
+    "O03": "Van 1",
+    "O07": "Van 2",
+    "O10": "Van 1"
+  },
+  "routes": {
+    "Van 1": {
+      "order_ids": [
+        "O11",
+        "O01",
+        "O03",
+        "O10"
+      ],
+      "arrivals_minutes_after_midnight": {
+        "O11": 522.1164492314733,
+        "O01": 547.8453786785224,
+        "O03": 562.7640553455055,
+        "O10": 579.3578117762994
+      },
+      "cost_minutes": 106.35781177629924,
+      "nodes_expanded": 25,
+      "nodes_generated": 28
+    },
+    "Van 2": {
+      "order_ids": [
+        "O07",
+        "O02",
+        "O04",
+        "O08"
+      ],
+      "arrivals_minutes_after_midnight": {
+        "O07": 518.1553983580701,
+        "O02": 532.1974228852022,
+        "O04": 569.6703914531291,
+        "O08": 589.6740380774833
+      },
+      "cost_minutes": 114.67403807748319,
+      "nodes_expanded": 22,
+      "nodes_generated": 23
+    },
+    "Van 3": {
+      "order_ids": [
+        "O06",
+        "O09",
+        "O05"
+      ],
+      "arrivals_minutes_after_midnight": {
+        "O06": 513.4906130960201,
+        "O09": 524.4006613985472,
+        "O05": 572.1050717205038
+      },
+      "cost_minutes": 100.10507172050374,
+      "nodes_expanded": 8,
+      "nodes_generated": 9
+    }
+  },
+  "csp_stats": {
+    "assignments": 18,
+    "backtracks": 7,
+    "nodes": 15,
+    "values_pruned": 32
+  },
+  "planning_attempts": [
+    {
+      "number": 1,
+      "csp_stats": {
+        "assignments": 11,
+        "backtracks": 0,
+        "nodes": 12,
+        "values_pruned": 9
+      },
+      "route_feasible": false,
+      "blocked_pair": [
+        "O08",
+        "O09"
+      ],
+      "reason": "No feasible route visits every assigned order within its time window."
+    },
+    {
+      "number": 2,
+      "csp_stats": {
+        "assignments": 11,
+        "backtracks": 0,
+        "nodes": 12,
+        "values_pruned": 10
+      },
+      "route_feasible": false,
+      "blocked_pair": [
+        "O04",
+        "O09"
+      ],
+      "reason": "No feasible route visits every assigned order within its time window."
+    },
+    {
+      "number": 3,
+      "csp_stats": {
+        "assignments": 11,
+        "backtracks": 0,
+        "nodes": 12,
+        "values_pruned": 12
+      },
+      "route_feasible": false,
+      "blocked_pair": [
+        "O06",
+        "O11"
+      ],
+      "reason": "No feasible route visits every assigned order within its time window."
+    },
+    {
+      "number": 4,
+      "csp_stats": {
+        "assignments": 11,
+        "backtracks": 0,
+        "nodes": 12,
+        "values_pruned": 12
+      },
+      "route_feasible": false,
+      "blocked_pair": [
+        "O08",
+        "O11"
+      ],
+      "reason": "No feasible route visits every assigned order within its time window."
+    },
+    {
+      "number": 5,
+      "csp_stats": {
+        "assignments": 11,
+        "backtracks": 0,
+        "nodes": 12,
+        "values_pruned": 13
+      },
+      "route_feasible": false,
+      "blocked_pair": [
+        "O04",
+        "O11"
+      ],
+      "reason": "No feasible route visits every assigned order within its time window."
+    },
+    {
+      "number": 6,
+      "csp_stats": {
+        "assignments": 18,
+        "backtracks": 7,
+        "nodes": 15,
+        "values_pruned": 32
+      },
+      "route_feasible": true,
+      "blocked_pair": null,
+      "reason": null
+    }
+  ],
+  "reassignments": 5,
+  "synthetic_orders": true
+}

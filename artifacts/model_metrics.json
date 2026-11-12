@@ -1,0 +1,28 @@
+{
+  "train_rows": 240000,
+  "test_rows": 60000,
+  "seed": 42,
+  "nn": {
+    "mae_minutes": 5.093660388753598,
+    "rmse_minutes": 7.433544606135222
+  },
+  "historical_pair_average": {
+    "mae_minutes": 6.5456839176476,
+    "rmse_minutes": 9.450320784134535
+  },
+  "distance_only": {
+    "mae_minutes": 14.46441457996257,
+    "rmse_minutes": 25.964536186714884
+  },
+  "neural_network_iterations": 25,
+  "test_period": "2026-09-24 through 2026-09-30, weekdays only",
+  "target": "duration_min",
+  "features": [
+    "pickup_zone",
+    "dropoff_zone",
+    "hour",
+    "weekday",
+    "mean_pair_distance"
+  ],
+  "all_data_rows_are_real_trips": true
+}

@@ -1,0 +1,92 @@
+dataset,column,kind,meaning,preprocessing_or_generation
+FHVHV,hvfhs_license_num,real,HVFHS TLC license identifier,Preserved in source; not used as a model feature
+FHVHV,dispatching_base_num,real,Dispatching base identifier,Preserved in source; not used as a model feature
+FHVHV,originating_base_num,real,Originating base identifier,Preserved in source; not used as a model feature
+FHVHV,request_datetime,real,Passenger request timestamp,Preserved in source; not used as a model feature
+FHVHV,on_scene_datetime,real,Vehicle on-scene timestamp,Preserved in source; not used as a model feature
+FHVHV,pickup_datetime,real,Passenger pickup timestamp,Used for date split hour and weekday
+FHVHV,dropoff_datetime,real,Passenger drop-off timestamp,Preserved in source; normalized duration comes from trip_time
+FHVHV,PULocationID,real,TLC pickup zone identifier,Renamed pickup_zone in processed sample
+FHVHV,DOLocationID,real,TLC drop-off zone identifier,Renamed dropoff_zone in processed sample
+FHVHV,trip_miles,real,Reported trip distance in miles,Used for pair mean distance and distance baseline
+FHVHV,trip_time,real,Reported trip duration in seconds,Divided by 60 to create duration_min
+FHVHV,base_passenger_fare,real,Base passenger fare,Preserved in source; not used
+FHVHV,tolls,real,Reported toll charges,Preserved in source; not used
+FHVHV,bcf,real,Black car fund charge,Preserved in source; not used
+FHVHV,sales_tax,real,Reported sales tax,Preserved in source; not used
+FHVHV,congestion_surcharge,real,Reported congestion surcharge,Preserved in source; not used
+FHVHV,airport_fee,real,Reported airport fee,Preserved in source; not used
+FHVHV,tips,real,Reported tip amount,Preserved in source; not used
+FHVHV,driver_pay,real,Reported driver pay,Preserved in source; not used
+FHVHV,shared_request_flag,real,Shared ride requested flag,Preserved in source; not used
+FHVHV,shared_match_flag,real,Shared ride match flag,Preserved in source; not used
+FHVHV,access_a_ride_flag,real,Access-A-Ride flag,Preserved in source; not used
+FHVHV,wav_request_flag,real,Wheelchair accessible vehicle requested flag,Preserved in source; not used
+FHVHV,wav_match_flag,real,Wheelchair accessible vehicle matched flag,Preserved in source; not used
+FHVHV,cbd_congestion_fee,real,CBD congestion fee,Preserved in source; not used
+Yellow,VendorID,real,TLC technology provider identifier,Preserved in source; not used
+Yellow,tpep_pickup_datetime,real,Yellow taxi pickup timestamp,Normalized to pickup_datetime
+Yellow,tpep_dropoff_datetime,real,Yellow taxi drop-off timestamp,Duration is drop-off minus pickup in minutes
+Yellow,passenger_count,real,Reported passenger count,Preserved in source; not used for delivery demand
+Yellow,trip_distance,real,Reported trip distance in miles,Used for pair mean distance and distance baseline
+Yellow,RatecodeID,real,TLC rate code,Preserved in source; not used
+Yellow,store_and_fwd_flag,real,Record store-and-forward flag,Preserved in source; not used
+Yellow,PULocationID,real,TLC pickup zone identifier,Renamed pickup_zone in processed sample
+Yellow,DOLocationID,real,TLC drop-off zone identifier,Renamed dropoff_zone in processed sample
+Yellow,payment_type,real,TLC payment type,Preserved in source; not used
+Yellow,fare_amount,real,Reported fare amount,Preserved in source; not used
+Yellow,extra,real,Reported extra charges,Preserved in source; not used
+Yellow,mta_tax,real,Reported MTA tax,Preserved in source; not used
+Yellow,tip_amount,real,Reported tip,Preserved in source; not used
+Yellow,tolls_amount,real,Reported toll charges,Preserved in source; not used
+Yellow,improvement_surcharge,real,Improvement surcharge,Preserved in source; not used
+Yellow,total_amount,real,Reported total amount,Preserved in source; not used
+Yellow,congestion_surcharge,real,Reported congestion surcharge,Preserved in source; not used
+Yellow,Airport_fee,real,Airport fee,Preserved in source; not used
+Yellow,cbd_congestion_fee,real,CBD congestion fee,Preserved in source; not used
+Yellow,request_source,real,Request source when supplied,Preserved in source; not used
+Green,VendorID,real,TLC technology provider identifier,Preserved in source; not used
+Green,lpep_pickup_datetime,real,Green taxi pickup timestamp,Normalized to pickup_datetime
+Green,lpep_dropoff_datetime,real,Green taxi drop-off timestamp,Duration is drop-off minus pickup in minutes
+Green,store_and_fwd_flag,real,Record store-and-forward flag,Preserved in source; not used
+Green,RatecodeID,real,TLC rate code,Preserved in source; not used
+Green,PULocationID,real,TLC pickup zone identifier,Renamed pickup_zone in processed sample
+Green,DOLocationID,real,TLC drop-off zone identifier,Renamed dropoff_zone in processed sample
+Green,passenger_count,real,Reported passenger count,Preserved in source; not used for delivery demand
+Green,trip_distance,real,Reported trip distance in miles,Used for pair mean distance and distance baseline
+Green,fare_amount,real,Reported fare amount,Preserved in source; not used
+Green,extra,real,Reported extra charges,Preserved in source; not used
+Green,mta_tax,real,Reported MTA tax,Preserved in source; not used
+Green,tip_amount,real,Reported tip,Preserved in source; not used
+Green,tolls_amount,real,Reported toll charges,Preserved in source; not used
+Green,ehail_fee,real,E-hail fee,Preserved in source; not used
+Green,improvement_surcharge,real,Improvement surcharge,Preserved in source; not used
+Green,total_amount,real,Reported total amount,Preserved in source; not used
+Green,payment_type,real,TLC payment type,Preserved in source; not used
+Green,trip_type,real,Street-hail or dispatch trip type,Preserved in source; not used
+Green,congestion_surcharge,real,Reported congestion surcharge,Preserved in source; not used
+Green,cbd_congestion_fee,real,CBD congestion fee,Preserved in source; not used
+Green,request_source,real,Request source when supplied,Preserved in source; not used
+Taxi zone lookup,LocationID,real,TLC zone identifier,Join key for zone names
+Taxi zone lookup,Borough,real,Zone borough,Provided lookup metadata
+Taxi zone lookup,Zone,real,Human-readable TLC zone name,Provided lookup metadata
+Taxi zone lookup,service_zone,real,TLC service-area category,Provided lookup metadata
+Processed sample,pickup_datetime,derived real,Normalized pickup date/time,Read from each real trip record
+Processed sample,pickup_zone,derived real,Normalized pickup zone,Renamed from real TLC zone identifier
+Processed sample,dropoff_zone,derived real,Normalized drop-off zone,Renamed from real TLC zone identifier
+Processed sample,hour,derived real,Pickup hour 0 through 23,Extracted from pickup_datetime
+Processed sample,weekday,derived real,Pickup day Monday=0 through Sunday=6,Extracted from pickup_datetime; weekend rows filtered
+Processed sample,mean_pair_distance,derived real,Historical mean distance for pickup/drop-off zone pair,Computed from training days only; global training mean used for unseen pair
+Processed sample,trip_distance,real,Observed trip distance in miles,Read from source record
+Processed sample,duration_min,derived real,Observed trip duration in minutes,From FHVHV trip_time or taxi drop-off minus pickup
+Processed sample,source_type,real,Source category fhvhv yellow or green,Set from the actual source file
+Generated planning order,order_id,synthetic,Unique scenario order identifier,Generated from fixed seed; not present in TLC files
+Generated planning order,zone,synthetic,Delivery zone for scenario,Sampled from real top-20 TLC zone IDs
+Generated planning order,window_start,synthetic,Scenario earliest service time in minutes after midnight,Generated from fixed seed; TLC has no delivery windows
+Generated planning order,window_end,synthetic,Scenario latest service-start time in minutes after midnight,Generated from fixed seed; TLC has no delivery windows
+Generated planning order,demand,synthetic,Scenario capacity units,Generated from fixed seed; not equivalent to passenger_count
+Generated planning order,service_minutes,synthetic,Scenario service duration,Generated from fixed seed; not supplied by TLC
+Generated planning order,synthetic,synthetic,Marks generated order data,Always true for order generator output
+Generated vehicle,van_id,synthetic,Scenario vehicle identifier,Three demo vans generated by configuration
+Generated vehicle,capacity,synthetic,Scenario capacity limit,Scenario parameter; TLC files contain no van capacity
+Generated depot,depot_zone,synthetic,Scenario start zone,Selected from real top-20 zones; TLC does not identify a delivery depot
