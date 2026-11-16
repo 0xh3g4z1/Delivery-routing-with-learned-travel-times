@@ -5,7 +5,7 @@ import itertools
 from dataclasses import dataclass
 from typing import Callable, Literal
 
-from integration.types import Order
+from integration.models import Order
 
 Algorithm = Literal["astar", "ucs", "greedy"]
 TravelTime = Callable[[int, int, float, int], float]

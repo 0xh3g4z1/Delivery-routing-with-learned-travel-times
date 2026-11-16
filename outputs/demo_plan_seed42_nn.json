@@ -1,6 +1,7 @@
 {
   "feasible": true,
   "seed": 42,
+  "scenario": "standard",
   "time_model": "nn",
   "depot_zone": 138,
   "capacities": {
@@ -105,6 +106,20 @@
     "nodes": 21,
     "values_pruned": 19
   },
+  "planning_attempts": [
+    {
+      "number": 1,
+      "csp_stats": {
+        "assignments": 20,
+        "backtracks": 0,
+        "nodes": 21,
+        "values_pruned": 19
+      },
+      "route_feasible": true,
+      "blocked_pair": null,
+      "reason": null
+    }
+  ],
   "reassignments": 0,
   "synthetic_orders": true
 }

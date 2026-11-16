@@ -9,7 +9,7 @@ from csp.assignment import (
     CSPStats,
     pairwise_conflicts,
 )
-from integration.types import Order
+from integration.models import Order
 from search.route import SearchResult, route_search
 
 TravelTime = Callable[[int, int, float, int], float]
@@ -46,11 +46,32 @@ def window_widening_suggestions(
     travel_time: TravelTime,
     weekday: int = 0,
 ) -> tuple[str, ...]:
-    by_id = {order.order_id: order for order in orders}
+    items = list(orders)
+    by_id = {order.order_id: order for order in items}
     conflicts = pairwise_conflicts(
-        orders, depot_zone, start_time, travel_time, weekday
+        items, depot_zone, start_time, travel_time, weekday
     )
     suggestions = []
+    for order in items:
+        travel = max(0.0, float(travel_time(
+            depot_zone, order.zone, (start_time // 60) % 24, weekday
+        )))
+        arrival = start_time + travel
+        if arrival <= order.window_end:
+            continue
+        steps = max(1, int((arrival - order.window_end + 14) // 15))
+        widened_end = order.window_end + 15 * steps
+        if widened_end > 24 * 60:
+            suggestions.append(
+                f"{order.order_id}: required extension exceeds 24:00; "
+                "widening within the same day is not enough."
+            )
+        else:
+            suggestions.append(
+                f"{order.order_id}: consider extending its latest time by "
+                f"{steps} x 15 minutes to "
+                f"{widened_end // 60:02d}:{widened_end % 60:02d}."
+            )
     for first_id, second_id in sorted(conflicts):
         first = by_id[first_id]
         second = by_id[second_id]

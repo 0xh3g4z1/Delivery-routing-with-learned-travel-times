@@ -5,7 +5,7 @@ from pathlib import Path
 from csp.assignment import AssignmentSolver
 from integration.planner import generate_orders
 from integration.travel import TravelTimeOracle
-from integration.types import Order
+from integration.models import Order
 from nn.model import load_bundle
 from nn.train import train
 from search.route import brute_force_route, route_search
@@ -43,11 +43,14 @@ def main() -> None:
         15, oracle.zones, seed=37, start_time=8 * 60,
         start_spread=60, window_width=(30, 60),
     )
-    print("\nCSP pruning comparison (same generated 15-order instance):")
+    print("\nCSP comparison (same generated 15-order instance):")
+    print("  AC-3 is domain propagation; its configuration still uses backtracking.")
+    csp_comparison = []
     for label, forward_checking, arc_consistency in (
-        ("BT", False, False),
-        ("BT+FC", True, False),
-        ("BT+FC+AC-3", True, True),
+        ("BT (no pruning)", False, False),
+        ("BT + AC-3 (FC off)", False, True),
+        ("BT + FC", True, False),
+        ("BT + FC + AC-3", True, True),
     ):
         solver = AssignmentSolver(
             csp_orders, {"Van 1": 10, "Van 2": 10, "Van 3": 10},
@@ -57,15 +60,26 @@ def main() -> None:
             forward_checking=forward_checking,
             arc_consistency=arc_consistency,
         )
-        print(
-            f"  {label}: feasible={result.feasible}, "
-            f"conflict_edges={len(solver.conflicts)}, "
-            f"assignments={result.stats.assignments}, "
-            f"backtracks={result.stats.backtracks}, nodes={result.stats.nodes}, "
-            f"values_pruned={result.stats.values_pruned}"
-        )
+        csp_comparison.append((label, result))
         if result.reason:
-            print(f"    {result.reason}")
+            print(f"  {label}: {result.reason}")
+    print(f"  {'Configuration':<22} {'Feasible':>9} {'Assignments':>12} "
+          f"{'Backtracks':>11} {'Nodes':>8} {'Values pruned':>14}")
+    for label, result in csp_comparison:
+        stats = result.stats
+        print(
+            f"  {label:<22} {str(result.feasible):>9} "
+            f"{stats.assignments:>12} {stats.backtracks:>11} "
+            f"{stats.nodes:>8} {stats.values_pruned:>14}"
+        )
+    bt_stats = csp_comparison[0][1].stats
+    ac3_stats = csp_comparison[1][1].stats
+    print(
+        "  AC-3-only change vs BT: "
+        f"backtracks {ac3_stats.backtracks - bt_stats.backtracks:+d}, "
+        f"nodes {ac3_stats.nodes - bt_stats.nodes:+d}, "
+        f"values pruned {ac3_stats.values_pruned - bt_stats.values_pruned:+d}."
+    )
 
     zone_a, zone_b = oracle.zones[1:3]
     depot = oracle.zones[0]
@@ -81,11 +95,10 @@ def main() -> None:
         Order("A", zone_a, 0, 10, demand=3),
         Order("B", zone_b, 0, 10, demand=3),
     ]
-    print("\nAC-3 early failure example (two conflicting orders, one possible van):")
+    print("\nBT vs AC-3 early failure (same two-order instance; forward checking off):")
     for label, forward_checking, arc_consistency in (
-        ("BT", False, False),
-        ("BT+FC", True, False),
-        ("BT+FC+AC-3", True, True),
+        ("BT (no pruning)", False, False),
+        ("BT + AC-3", False, True),
     ):
         solver = AssignmentSolver(
             impossible, {"Van 1": 3, "Van 2": 2, "Van 3": 1},

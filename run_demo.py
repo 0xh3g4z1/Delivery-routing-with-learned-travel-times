@@ -13,11 +13,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from data.make_data import build_dataset
+from integration.models import Order
 from integration.planner import generate_orders, plan_orders
 from integration.presentation import render_presentation
 from integration.travel import TravelTimeOracle, export_hourly_matrix
 from nn.model import load_bundle
 from nn.train import train
+from search.route import Algorithm, TravelTime, route_search
 
 ROOT = Path(__file__).resolve().parent
 PROCESSED = ROOT / "data" / "processed"
@@ -81,13 +83,92 @@ def _plot_plan(orders, plan, path: Path) -> None:
     plt.close(fig)
 
 
+def _compare_route_search(
+    orders: list[Order],
+    assignments: dict[str, str],
+    van_capacities: dict[str, int],
+    depot_zone: int,
+    start_time: int,
+    travel_time: TravelTime,
+    weekday: int,
+) -> list[dict[str, str | bool | float | int | None]]:
+    labels = {"astar": "A*", "ucs": "UCS", "greedy": "Greedy"}
+    comparison = []
+    algorithms: tuple[Algorithm, ...] = ("astar", "ucs", "greedy")
+    for algorithm in algorithms:
+        results = []
+        for van_id in van_capacities:
+            van_orders = [
+                order for order in orders
+                if assignments[order.order_id] == van_id
+            ]
+            results.append(route_search(
+                van_orders, depot_zone, start_time, travel_time,
+                algorithm=algorithm, weekday=weekday,
+            ))
+        feasible = all(result.feasible for result in results)
+        comparison.append({
+            "algorithm": labels[algorithm],
+            "feasible": feasible,
+            "route_cost_minutes": (
+                sum(float(result.cost) for result in results)
+                if feasible else None
+            ),
+            "nodes_expanded": sum(result.expanded for result in results),
+            "nodes_generated": sum(result.generated for result in results),
+        })
+    return comparison
+
+
+def _generate_scenario_orders(
+    scenario: str,
+    zones: list[int],
+    seed: int,
+    van_capacities: dict[str, int],
+) -> list[Order]:
+    if scenario == "impossible":
+        return [
+            Order(
+                order_id="O01",
+                zone=zones[0],
+                window_start=8 * 60,
+                window_end=10 * 60,
+                demand=max(van_capacities.values()) + 1,
+                service_minutes=5.0,
+            )
+        ]
+    if scenario == "outside-window":
+        return [
+            Order(
+                order_id="O01",
+                zone=zones[0],
+                window_start=8 * 60 - 30,
+                window_end=8 * 60 - 1,
+                demand=1,
+                service_minutes=5.0,
+            )
+        ]
+    if scenario == "stress":
+        return generate_orders(
+            11, zones, seed=seed, start_time=8 * 60,
+            start_spread=30, window_width=(45, 120),
+        )
+    if scenario == "standard":
+        return generate_orders(
+            20, zones, seed=seed, start_time=8 * 60,
+            start_spread=60, window_width=(300, 420),
+        )
+    raise ValueError(f"Unknown demo scenario: {scenario}")
+
+
 def run_demo(
     seed: int = 42,
     ensure_assets: bool = True,
     time_model: str = "nn",
     scenario: str = "standard",
 ) -> dict:
-    if scenario not in {"standard", "stress"}:
+    capacities = {"Van 1": 10, "Van 2": 10, "Van 3": 10}
+    if scenario not in {"standard", "stress", "impossible", "outside-window"}:
         raise ValueError(f"Unknown demo scenario: {scenario}")
     if ensure_assets:
         _ensure_model(seed)
@@ -106,16 +187,7 @@ def run_demo(
     )
     zones = oracle.zones
     depot_zone = zones[0]
-    if scenario == "stress":
-        orders = generate_orders(
-            11, zones, seed=seed, start_time=8 * 60,
-            start_spread=30, window_width=(45, 120),
-        )
-    else:
-        orders = generate_orders(
-            20, zones, seed=seed, start_time=8 * 60,
-            start_spread=60, window_width=(300, 420),
-        )
+    orders = _generate_scenario_orders(scenario, zones, seed, capacities)
     name_suffix = f"seed{seed}_{time_model}"
     if scenario == "standard":
         presentation_name = f"demo_presentation_{name_suffix}.html"
@@ -131,10 +203,14 @@ def run_demo(
         order_name = f"demo_orders_{scenario}_seed{seed}.csv"
     order_file = OUTPUTS / order_name
     pd.DataFrame([asdict(order) for order in orders]).to_csv(order_file, index=False)
-    capacities = {"Van 1": 10, "Van 2": 10, "Van 3": 10}
     plan = plan_orders(
         orders, capacities, depot_zone, 8 * 60, oracle, weekday=0,
     )
+    search_comparison = []
+    if plan.assignments is not None:
+        search_comparison = _compare_route_search(
+            orders, plan.assignments, capacities, depot_zone, 8 * 60, oracle, 0,
+        )
     presentation_path = OUTPUTS / presentation_name
     presentation_orders = [
         {
@@ -182,6 +258,7 @@ def run_demo(
                     for van_id, capacity in capacities.items()
                 ],
                 "csp_stats": asdict(plan.csp_stats),
+                "search_comparison": search_comparison,
                 "planning_attempts": [asdict(item) for item in plan.attempts],
                 "reassignments": plan.reassignments,
                 "feasible": False,
@@ -244,6 +321,7 @@ def run_demo(
             "depot_name": oracle.zone_names.get(depot_zone, "Unknown"),
             "vans": vans,
             "csp_stats": asdict(plan.csp_stats),
+            "search_comparison": search_comparison,
             "planning_attempts": [asdict(item) for item in plan.attempts],
             "reassignments": plan.reassignments,
             "feasible": True,
@@ -308,9 +386,12 @@ def main() -> None:
                         default="nn")
     parser.add_argument(
         "--scenario",
-        choices=("standard", "stress"),
-        default="standard",
-        help="Use the normal demo or a tighter-window case exercising replanning.",
+        choices=("standard", "stress", "impossible", "outside-window"),
+        default="stress",
+        help=(
+            "Use the normal, stress, impossible-capacity, or "
+            "outside-window case."
+        ),
     )
     parser.add_argument("--no-prepare", action="store_true",
                         help="Fail rather than build data/model assets that are missing.")

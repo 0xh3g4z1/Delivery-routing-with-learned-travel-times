@@ -1,0 +1,23 @@
+{
+  "feasible": false,
+  "reason": "No solution: order O01 cannot be served from the depot within its time window.",
+  "window_suggestions": [
+    "O01: consider extending its latest time by 1 x 15 minutes to 08:14."
+  ],
+  "time_model": "nn",
+  "scenario": "outside-window",
+  "planning_attempts": [
+    {
+      "number": 1,
+      "csp_stats": {
+        "assignments": 0,
+        "backtracks": 0,
+        "nodes": 0,
+        "values_pruned": 0
+      },
+      "route_feasible": null,
+      "blocked_pair": null,
+      "reason": "No solution: order O01 cannot be served from the depot within its time window."
+    }
+  ]
+}

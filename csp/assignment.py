@@ -4,7 +4,7 @@ from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Callable, Iterable
 
-from integration.types import Order
+from integration.models import Order
 
 TravelTime = Callable[[int, int, float, int], float]
 Pair = tuple[str, str]
@@ -147,20 +147,28 @@ class AssignmentSolver:
         self.max_nodes = max_nodes
         domains: dict[str, set[str]] = {}
         for order in self.orders:
-            reachable = can_deliver_from_depot(
-                order, self.depot_zone, self.start_time,
-                self.travel_time, self.weekday,
-            )
-            domains[order.order_id] = {
+            eligible_vans = {
                 van_id for van_id, capacity in self.capacities.items()
-                if capacity >= order.demand and reachable
+                if capacity >= order.demand
             }
-            if not domains[order.order_id]:
+            if not eligible_vans:
+                largest_capacity = max(self.capacities.values(), default=0)
                 reason = (
-                    f"No solution: order {order.order_id} cannot be served "
-                    "from the depot in its time window or exceeds every van capacity."
+                    f"No solution: order {order.order_id} requires "
+                    f"{order.demand} capacity units, but the largest van "
+                    f"capacity is {largest_capacity}."
                 )
                 return self._result(None, reason)
+            if not can_deliver_from_depot(
+                order, self.depot_zone, self.start_time,
+                self.travel_time, self.weekday,
+            ):
+                return self._result(
+                    None,
+                    f"No solution: order {order.order_id} cannot be served "
+                    "from the depot within its time window.",
+                )
+            domains[order.order_id] = eligible_vans
 
         if arc_consistency and not self._ac3(domains):
             return self._result(None, "No solution: AC-3 emptied an order's van domain.")

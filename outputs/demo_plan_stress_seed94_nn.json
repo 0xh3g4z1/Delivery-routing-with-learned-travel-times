@@ -77,7 +77,7 @@
     "assignments": 18,
     "backtracks": 7,
     "nodes": 15,
-    "values_pruned": 36
+    "values_pruned": 32
   },
   "planning_attempts": [
     {
@@ -161,7 +161,7 @@
         "assignments": 18,
         "backtracks": 7,
         "nodes": 15,
-        "values_pruned": 36
+        "values_pruned": 32
       },
       "route_feasible": true,
       "blocked_pair": null,

@@ -1,0 +1,23 @@
+{
+  "feasible": false,
+  "reason": "No solution: order O01 requires 11 capacity units, but the largest van capacity is 10.",
+  "window_suggestions": [
+    "No pair-specific time-window widening was identified; if capacity is the cause, add capacity or another van instead."
+  ],
+  "time_model": "nn",
+  "scenario": "impossible",
+  "planning_attempts": [
+    {
+      "number": 1,
+      "csp_stats": {
+        "assignments": 0,
+        "backtracks": 0,
+        "nodes": 0,
+        "values_pruned": 0
+      },
+      "route_feasible": null,
+      "blocked_pair": null,
+      "reason": "No solution: order O01 requires 11 capacity units, but the largest van capacity is 10."
+    }
+  ]
+}

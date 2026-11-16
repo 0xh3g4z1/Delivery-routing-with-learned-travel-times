@@ -1,4 +1,4 @@
-from integration.types import Order
+from integration.models import Order
 from search.route import brute_force_route, route_search
 
 

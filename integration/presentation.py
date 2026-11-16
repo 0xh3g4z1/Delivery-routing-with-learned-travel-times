@@ -46,6 +46,23 @@ def _model_comparison(metrics: dict, selected_model: str) -> str:
     return "\n".join(rows)
 
 
+def _search_comparison_rows(results: list[dict]) -> str:
+    rows = []
+    for result in results:
+        cost_value = result["route_cost_minutes"]
+        cost = "—" if cost_value is None else f'{float(cost_value):.1f} min'
+        outcome = "Feasible" if result["feasible"] else "No feasible route"
+        rows.append(
+            "<tr>"
+            f'<td><b>{escape(result["algorithm"])}</b></td>'
+            f"<td>{outcome}</td><td>{cost}</td>"
+            f'<td>{int(result["nodes_expanded"]):,}</td>'
+            f'<td>{int(result["nodes_generated"]):,}</td>'
+            "</tr>"
+        )
+    return "\n".join(rows)
+
+
 def _schedule_svg(vans: list[dict]) -> str:
     all_orders = [
         order
@@ -120,6 +137,8 @@ def render_presentation(data: dict) -> str:
     )
     orders = data["orders"]
     vans = data["vans"]
+    csp = data["csp_stats"]
+    search_comparison = _search_comparison_rows(data.get("search_comparison", []))
     feature_names = {
         "pickup_zone": "Pickup zone",
         "dropoff_zone": "Drop-off zone",
@@ -151,12 +170,11 @@ def render_presentation(data: dict) -> str:
         f'{", ".join(escape(order_id) for order_id in van["order_ids"])}</p>'
         f'<p class="muted">A* stop sequence: '
         f'{" → ".join(escape(order["order_id"]) for order in van["route"])}</p>'
-        f'<small>{van["expanded"]} states expanded · '
-        f'{van["generated"]} generated · route cost {van["cost"]:.1f} min</small>'
+        f'<small>A* examined {van["expanded"]} route states · '
+        f'queued {van["generated"]} · total cost {van["cost"]:.1f} min</small>'
         f'</article>'
         for van in vans
     )
-    csp = data["csp_stats"]
     attempt_rows = "".join(
         "<tr>"
         f'<td>{attempt["number"]}</td>'
@@ -168,13 +186,29 @@ def render_presentation(data: dict) -> str:
         "</tr>"
         for attempt in attempts
     )
-    scenario_label = "Stress case" if scenario == "stress" else "Standard case"
-    scenario_explanation = (
-        "Tighter seeded windows intentionally trigger assignment backtracking "
-        "and route-conflict reassignment before a feasible plan is found."
-        if scenario == "stress" else
-        "Wide seeded windows make this a straightforward baseline walkthrough."
-    )
+    scenario_labels = {
+        "standard": "Standard case",
+        "stress": "Stress case",
+        "impossible": "Impossible case",
+        "outside-window": "Outside-window case",
+    }
+    scenario_explanations = {
+        "standard": "Broad seeded time windows make the planning steps easy to follow.",
+        "stress": (
+            "Tighter seeded windows intentionally trigger assignment backtracking "
+            "and route-conflict reassignment before a feasible plan is found."
+        ),
+        "impossible": (
+            "This case gives one order more demand than any van can carry, so the "
+            "CSP should clearly report that no solution exists."
+        ),
+        "outside-window": (
+            "The van starts at 08:00, but the order must be served by 07:59. "
+            "Serving it at or after departure would violate its time window."
+        ),
+    }
+    scenario_label = scenario_labels.get(scenario, "Demo case")
+    scenario_explanation = scenario_explanations.get(scenario, "")
     feasible = data["feasible"]
     status_text = "Feasible plan found" if feasible else "No feasible plan found"
     plan_notice = (
@@ -226,11 +260,18 @@ padding:28px 32px;margin-top:14px;box-shadow:0 5px 18px #18394a0c}}
 .card,.van-card{{border:1px solid var(--line);border-radius:14px;padding:17px;background:#fff}}
 .card h3,.van-card h3{{margin:0 0 5px}}.big{{font-size:30px;font-weight:780;letter-spacing:-.03em}}
 .muted,small{{color:var(--muted)}}small{{display:block;margin-top:8px}}
-.flow{{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:22px}}
-.flow article{{padding:18px;border:1px solid var(--line);border-radius:14px;position:relative}}
+.flow{{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:22px}}
+.flow article{{padding:16px;border:1px solid var(--line);border-radius:14px;
+position:relative;background:linear-gradient(180deg,#fff,#f8fbfc);
+box-shadow:0 4px 12px #18394a08}}
 .flow article:not(:last-child):after{{content:"→";position:absolute;right:-21px;top:38%;
 color:var(--blue);font-size:24px;font-weight:700;z-index:1}}
-.step{{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em}}
+.step{{display:inline-flex;color:var(--blue);font-size:12px;font-weight:800;
+letter-spacing:.08em;background:#eaf3f7;padding:4px 8px;border-radius:999px}}
+.definition-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+gap:10px;margin:14px 0}}.definition{{padding:12px;border-radius:10px;background:#f4f7f8}}
+.definition b{{display:block;margin-bottom:3px}}.definition p{{margin:0;color:var(--muted);font-size:14px}}
+.small-heading{{margin:22px 0 4px}}.flow p,.card p,.van-card p{{margin:8px 0}}
 .callout{{padding:14px 16px;border-radius:12px;background:var(--pale);margin:18px 0}}
 .success{{background:#e8f6f0;color:#145c47}}.warning{{background:#fff1e8;color:#8e3b24}}
 .metric-row{{margin:15px 0;padding:10px;border-radius:10px}}
@@ -254,13 +295,14 @@ stroke:white;stroke-width:2}}.legend{{display:flex;gap:18px;flex-wrap:wrap;margi
 .legend span:before{{content:"";display:inline-block;width:12px;height:12px;border-radius:50%;
 margin-right:7px;vertical-align:-1px;background:#16845e}}.legend .bar-key:before{{
 width:16px;height:10px;border-radius:4px;background:#acd4e4}}.legend .late-key:before{{background:#c25332}}
-.speaker{{margin-top:20px;border-top:1px solid var(--line);padding-top:12px}}
-.speaker summary{{cursor:pointer;color:var(--blue);font-weight:700}}.empty{{padding:22px;
+.empty{{padding:22px;
 border-radius:12px;background:#f4f7f8;color:var(--muted)}}
 .controls{{position:fixed;bottom:0;left:0;right:0;background:#ffffffed;
 backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px max(24px,calc((100vw - 1180px)/2));
 display:flex;justify-content:space-between;align-items:center;gap:12px}}
 .controls .right{{display:flex;gap:8px}}.progress{{font-size:14px;color:var(--muted)}}
+@media(max-width:900px){{.flow{{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.flow article:after{{display:none}}}}
 @media(max-width:700px){{main{{padding:0 14px;margin-top:14px}}.slide{{padding:20px 17px}}
 .hero{{padding:24px 20px}}.flow{{grid-template-columns:1fr;gap:10px}}.flow article:after{{display:none}}
 .top-meta{{display:none}}.controls{{padding:10px 14px}}}}
@@ -273,51 +315,53 @@ display:flex;justify-content:space-between;align-items:center;gap:12px}}
 <div class="top-meta">Seed {data["seed"]} · Active travel-time method: {escape(model_label)}</div></header>
 <main>
 <section class="hero">
-<span class="badge">PRESENTATION MODE · 5 CHAPTERS · {escape(scenario_label.upper())}</span>
+<span class="badge">PROJECT WALKTHROUGH · 5 STEPS · {escape(scenario_label.upper())}</span>
 <h1>From real trip data<br>to a delivery plan</h1>
 <p>{escape(scenario_explanation)} A guided demo of how travel-time estimates, constraint-based vehicle assignment,
-and A* route search work together. Use the chapter buttons or arrow keys to present.</p>
+and A* route search work together. Follow the numbered steps to see what each part does and how its output feeds the next part.</p>
 <p style="margin-top:16px"><span class="badge">Real TLC trip records for model training</span>
 &nbsp;<span class="badge">Generated orders for the planning scenario</span></p>
 </section>
 <nav class="nav" aria-label="Presentation chapters">
-<button class="active" data-slide="0">1 · Overview</button>
-<button data-slide="1">2 · Data &amp; model</button>
-<button data-slide="2">3 · Scenario</button>
-<button data-slide="3">4 · Assignment</button>
-<button data-slide="4">5 · Routes &amp; limits</button>
+<button class="active" data-slide="0">1 · Full workflow</button>
+<button data-slide="1">2 · Travel-time model</button>
+<button data-slide="2">3 · Orders</button>
+<button data-slide="3">4 · CSP assignment</button>
+<button data-slide="4">5 · Search comparison</button>
+<button data-slide="5">6 · Routes &amp; results</button>
 </nav>
 <section class="slide active" aria-label="Overview">
-<h2>One planning problem, three connected parts</h2>
-<p class="lead">Estimate travel time from past trips, assign orders to vehicles under constraints,
-then find a stop order that respects the order windows.</p>
+<h2>The full solution in five steps</h2>
+<p class="lead">Each stage has one job. Its output becomes the next stage's input.</p>
 <div class="flow">
-<article><span class="step">01 · ESTIMATE</span><h3>Travel-time model</h3>
-<p>Uses trip history to estimate zone-to-zone travel duration for the selected hour.</p></article>
-<article><span class="step">02 · ASSIGN</span><h3>CSP vehicle allocation</h3>
-<p>Chooses a van per order while respecting time conflicts and each van's capacity.</p></article>
-<article><span class="step">03 · ORDER</span><h3>A* route search</h3>
-<p>Searches for the sequence of assigned stops with travel, waiting, and service time.</p></article>
+<article><span class="step">01 · LEARN</span><h3>Prepare trip data</h3>
+<p>Clean real TLC trips and split earlier dates for training from later dates for testing.</p></article>
+<article><span class="step">02 · ESTIMATE</span><h3>Predict travel minutes</h3>
+<p>The selected model estimates travel between zones by hour. The NN predicts trip duration.</p></article>
+<article><span class="step">03 · ASSIGN</span><h3>CSP picks vans</h3>
+<p>Assign each generated order to a van without breaking capacity or time-window rules.</p></article>
+<article><span class="step">04 · ORDER</span><h3>A* plans stops</h3>
+<p>For each van, choose a feasible stop order using travel, waiting, and service time.</p></article>
+<article><span class="step">05 · RETRY</span><h3>Repair conflicts</h3>
+<p>If a route fails, add a different-van rule for the conflicting orders and solve again.</p></article>
 </div>
 <div class="grid">
-<div class="card"><div class="muted">Test-set mean absolute error</div>
+<div class="card"><div class="muted">NN test MAE</div>
 <div class="big">{float(metrics["nn"]["mae_minutes"]):.2f} min</div>
-<small>Neural network prediction error on unseen real trips</small></div>
+<small>Average absolute prediction error on held-out real taxi trips</small></div>
 <div class="card"><div class="muted">Scenario orders</div><div class="big">{len(orders)}</div>
 <small>Generated planning inputs, not TLC delivery records</small></div>
 <div class="card"><div class="muted">Plan status</div><div class="big" style="font-size:24px">{escape(status_text)}</div>
 <small>Computed from seed {data["seed"]} with {escape(model_label.lower())}</small></div>
 </div>
-<div class="callout"><b>Important scope note:</b> real taxi trips train and test the travel-time model.
-Delivery orders, their windows, service times, depot, and fleet capacities are generated assumptions.</div>
-<details class="speaker"><summary>Presenter notes</summary><p>Start with the three-stage story.
-Emphasize that the model is evaluated on actual held-out trip durations, while the
-downstream delivery-planning inputs are synthetic because the taxi data has no courier orders.</p></details>
+<div class="callout"><b>Who does what:</b> the model estimates minutes; the CSP chooses
+<i>which van</i> gets each order; A* chooses <i>the order of stops</i>. Real taxi trips train
+and test the model. The delivery scenario is generated.</div>
 </section>
 <section class="slide" aria-label="Data and model">
-<h2>What the model learns</h2>
-<p class="lead">It predicts a trip's duration in minutes, not a delivery success category.
-The displayed accuracy is therefore an error in minutes rather than a percentage.</p>
+<h2>Step 2 · Estimate travel time</h2>
+<p class="lead">The neural network's responsibility is to estimate one number:
+how many minutes a trip between two zones may take at a particular time.</p>
 <div class="grid">
 <div class="card"><div class="muted">Training examples</div><div class="big">{int(metrics["train_rows"]):,}</div>
 <small>Real trips · September 1–23, 2026</small></div>
@@ -326,19 +370,22 @@ The displayed accuracy is therefore an error in minutes rather than a percentage
 <div class="card"><div class="muted">Model</div><div class="big">32 → 16</div>
 <small>Hidden-layer units · ReLU · Adam · early stopping · {int(metrics["neural_network_iterations"])} iterations</small></div>
 </div>
+<div class="callout"><b>Inputs → prediction:</b> {escape(features)} →
+<b>estimated trip duration in minutes</b>. The NN learns patterns from the training trips;
+during training it adjusts its internal weights to reduce prediction error. It does not choose vans or stops.</div>
 <h3>Test error comparison</h3>
-<p class="muted">Lower MAE is better. Each estimate is compared with the observed duration on the same held-out trips.</p>
+<p class="muted">All methods are checked against the same held-out real trips. Lower errors mean predictions were closer to the observed duration.</p>
 {_model_comparison(metrics, selected_model)}
-<div class="callout"><b>Model inputs:</b> {escape(features)}.<br>
-The neural network's test MAE is {float(metrics["nn"]["mae_minutes"]):.2f} minutes;
-its RMSE is {float(metrics["nn"]["rmse_minutes"]):.2f} minutes. RMSE penalizes larger misses more.</div>
-<details class="speaker"><summary>Presenter notes</summary><p>Explain the chronological split:
-train on earlier September weekdays and evaluate on the later weekdays, reducing the risk
-of testing on the same time period used to fit the model. The baselines show whether the
-network adds value beyond simple averages.</p></details>
+<div class="definition-grid">
+<div class="definition"><b>MAE · mean absolute error</b><p>Average size of the prediction miss. This NN's MAE is {float(metrics["nn"]["mae_minutes"]):.2f} minutes.</p></div>
+<div class="definition"><b>RMSE · root mean squared error</b><p>Also an error in minutes, but large misses count more. It is often higher than MAE.</p></div>
+<div class="definition"><b>Baselines</b><p>Simple reference methods: historical average for a zone pair, or an estimate based on distance.</p></div>
+</div>
+<div class="callout"><b>Important:</b> the held-out test measures prediction accuracy on taxi trips.
+It does not measure courier lateness or prove that taxi durations equal van travel times.</div>
 </section>
 <section class="slide" aria-label="Generated order scenario">
-<h2>Scenario input: generated orders</h2>
+<h2>Step 3 · Create the planning input</h2>
 <p class="lead">These are presentation/demo inputs. Zone IDs correspond to NYC taxi zones,
 but order demand, service time, and time windows are generated for this scenario.</p>
 <div class="grid">
@@ -348,63 +395,82 @@ but order demand, service time, and time windows are generated for this scenario
 <div class="card"><div class="muted">Fleet</div><div class="big">{len(vans)} vans</div>
 <small>Capacity {vans[0]["capacity"] if vans else 0} units per van</small></div>
 </div>
-<div class="callout">Each order has a destination zone, an allowed time window, demand,
-and a small generated service duration. Order IDs are synthetic labels.</div>
+<div class="callout"><b>How to read the order numbers:</b> times are local clock times;
+the window is when service may begin. Demand uses made-up capacity units, and service time
+is the made-up number of minutes spent at that stop. These are scenario assumptions, not TLC fields.</div>
 <div class="table-wrap"><table><thead><tr><th>Order</th><th>Destination zone</th>
 <th>Allowed window</th><th>Demand</th><th>Service time</th></tr></thead>
 <tbody>{orders_html}</tbody></table></div>
-<details class="speaker"><summary>Presenter notes</summary><p>Point out one example order:
-its time window is a constraint on when the van can serve it, and demand consumes vehicle capacity.
-Be explicit that this scenario is generated rather than observed courier data.</p></details>
 </section>
 <section class="slide" aria-label="Vehicle assignment">
-<h2>Constraint-based assignment</h2>
-<p class="lead">The CSP selects a van for each order. Capacity and pairwise time-window
-conflicts constrain which combinations are allowed.</p>
+<h2>Step 4 · CSP assigns orders to vans</h2>
+<p class="lead">The CSP's job is to decide <b>which van gets each order</b>.
+It starts with possible vans, then removes choices that violate capacity or scheduling rules.</p>
 {plan_notice}
 <div class="grid">
-<div class="card"><div class="muted">Search nodes</div><div class="big">{int(csp.get("nodes", 0)):,}</div></div>
-<div class="card"><div class="muted">Assignments tried</div><div class="big">{int(csp.get("assignments", 0)):,}</div></div>
-<div class="card"><div class="muted">Backtracks</div><div class="big">{int(csp.get("backtracks", 0)):,}</div>
-<small>{total_backtracks} total across all assignment attempts.</small></div>
-<div class="card"><div class="muted">Route-triggered reassignments</div><div class="big">{int(data["reassignments"])}</div>
-<small>Late route conflicts can be added as different-van constraints.</small></div>
+<div class="card"><div class="muted">Partial assignments explored</div><div class="big">{int(csp.get("nodes", 0)):,}</div>
+<small>One node means the solver examined one partial van plan.</small></div>
+<div class="card"><div class="muted">Van choices tried</div><div class="big">{int(csp.get("assignments", 0)):,}</div>
+<small>Each choice tries putting one order on one van.</small></div>
+<div class="card"><div class="muted">Choices undone (backtracks)</div><div class="big">{int(csp.get("backtracks", 0)):,}</div>
+<small>{total_backtracks} backtracks summed across all assignment attempts.</small></div>
+<div class="card"><div class="muted">Van options removed</div><div class="big">{int(csp.get("values_pruned", 0)):,}</div>
+<small>Options ruled out by the constraints during the final attempt.</small></div>
 </div>
-<h3>Assignment and route-replanning cycles</h3>
-<p class="muted">Each retry adds a route-discovered order conflict to the CSP, then assigns and searches again.</p>
+<div class="callout"><b>Simple meaning:</b> each order starts with candidate vans. The CSP removes vans
+that cannot reach it in time or carry its demand, and keeps time-conflicting orders on separate vans.
+Backtracking means “this choice caused a problem, so undo it and try another”; Forward Checking and AC-3
+remove impossible options earlier. If A* later finds a route conflict, the planner adds a different-van
+rule for that pair and retries (up to five times).</div>
+<h3 class="small-heading">Assignment and route-replanning attempts</h3>
+<p class="muted">Each row is one CSP assignment followed by a route check. “Retry required” means the route found a conflict to fix.</p>
 <div class="table-wrap"><table><thead><tr><th>Attempt</th><th>CSP nodes</th>
 <th>Choices tried</th><th>Backtracks</th><th>Outcome</th><th>Route conflict added</th></tr></thead>
 <tbody>{attempt_rows or '<tr><td colspan="6">No planning attempts recorded.</td></tr>'}</tbody></table></div>
 <div class="van-grid">{van_cards or '<p class="empty">No vehicle assignment is available.</p>'}</div>
 {f'<div class="callout"><b>Possible adjustments:</b><ul>{suggestions}</ul></div>' if suggestions else ''}
-<details class="speaker"><summary>Presenter notes</summary><p>Describe each order as a variable
-whose domain is the set of vans. CSP constraints remove assignments that violate capacity
-or a pairwise scheduling conflict. A backtrack means the solver undoes a choice and tries another.</p></details>
+</section>
+<section class="slide" aria-label="Search comparison">
+<h2>Step 5 · Compare route-search methods</h2>
+<p class="lead">A*, UCS, and Greedy are run on the <b>same final van assignments</b>.
+Only the route-search method changes, so this compares how each method orders the same stops.</p>
+<div class="table-wrap"><table><thead><tr><th>Method</th><th>Result</th>
+<th>Total route cost across vans</th><th>Route states expanded</th><th>Route states generated</th></tr></thead>
+<tbody>{search_comparison or '<tr><td colspan="5">No assignment was available for a route-search comparison.</td></tr>'}</tbody></table></div>
+<div class="definition-grid">
+<div class="definition"><b>A* · cost so far + estimate</b><p>Uses time already spent plus a lower-bound estimate of the remaining travel. It can find an optimal route when its search completes.</p></div>
+<div class="definition"><b>UCS · cost so far</b><p>Explores the route with the least cost so far. It can find an optimal route, usually by exploring more possibilities.</p></div>
+<div class="definition"><b>Greedy · estimate first</b><p>Chooses routes that look closest to finishing. It can be quick, but is not guaranteed to find the lowest-cost route.</p></div>
+</div>
+<div class="callout"><b>How to read the numbers:</b> lower route cost means fewer estimated minutes for travel, waiting, and service.
+“Expanded” counts route states the method examined; “generated” counts possible next states it added to its search.
+These counts cover all vans together for this one seeded demo, not the five-seed experiment.</div>
 </section>
 <section class="slide" aria-label="Routes and limitations">
-<h2>Route schedule and what it means</h2>
-<p class="lead">After assignment, A* chooses an order of stops for each van.
-The chart compares predicted arrival times with the generated order windows.</p>
+<h2>Step 6 · Read the route schedule</h2>
+<p class="lead">After the CSP assigns orders, A* decides <b>the order each van visits its stops</b>.
+It uses the predicted travel minutes and checks whether each arrival fits the order window.</p>
 <div class="legend"><span class="bar-key">Allowed order window</span>
 <span>Predicted arrival inside window</span><span class="late-key">Arrival outside window</span></div>
 <div class="schedule-wrap">{schedule}</div>
 <div class="grid">
-<div class="card"><h3>Search</h3><p>Route state tracks the current stop, completed orders, and time.
-The objective includes travel, waiting, and service duration.</p></div>
+<div class="card"><h3>What is a route state?</h3><p>A snapshot: current zone, orders already visited, and current time.
+One possible next stop creates a new state.</p></div>
+<div class="card"><h3>What do the search numbers mean?</h3><p><b>Expanded</b> = a route snapshot A* examined.
+<b>Generated</b> = a possible next snapshot added to its queue.</p></div>
+<div class="card"><h3>What is route cost?</h3><p>Total estimated minutes for travel + waiting for windows + service at stops.
+A* searches for a low-cost feasible order.</p></div>
 <div class="card"><h3>Travel-time caveat</h3><p>TLC taxi trip durations approximate travel between zones;
 they are not measured courier-van times.</p></div>
 <div class="card"><h3>Evaluation caveat</h3><p>The model's MAE/RMSE evaluate held-out real taxi trips.
 They do not measure actual courier lateness or delivery performance.</p></div>
 </div>
-<div class="callout">Route arrivals are predictions based on the selected time model.
-The blue bars and scenario inputs are generated; they should not be presented as real delivery outcomes.</div>
-<details class="speaker"><summary>Presenter notes</summary><p>Read the chart as a timeline:
-blue is the allowed window and the dot is the estimated arrival. A* searches feasible
-stop sequences using estimated travel times. Close by distinguishing model accuracy on taxi
-trips from delivery performance, which this dataset cannot establish.</p></details>
+<div class="callout"><b>Read the chart:</b> the blue bar is the order's allowed time window;
+the dot is the estimated arrival. Green means the arrival fits the window; orange means it does not.
+The predicted arrivals and generated orders are a demo, not real delivery outcomes.</div>
 </section>
 </main>
-<footer class="controls"><div class="progress" id="progress">Chapter 1 of 5</div>
+<footer class="controls"><div class="progress" id="progress">Chapter 1 of 6</div>
 <div class="right"><button id="prev" type="button">← Previous</button>
 <button id="next" type="button">Next →</button><button id="full" type="button">Present full screen</button></div></footer>
 <script>

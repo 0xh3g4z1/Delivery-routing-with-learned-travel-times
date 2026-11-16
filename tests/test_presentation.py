@@ -41,7 +41,35 @@ def test_presentation_contains_walkthrough_and_escapes_zone_names():
             "expanded": 3,
             "generated": 5,
         }],
-        "csp_stats": {"nodes": 3, "assignments": 1, "backtracks": 0},
+        "csp_stats": {
+            "nodes": 3,
+            "assignments": 1,
+            "backtracks": 0,
+            "values_pruned": 2,
+        },
+        "search_comparison": [
+            {
+                "algorithm": "A*",
+                "feasible": True,
+                "route_cost_minutes": 40.0,
+                "nodes_expanded": 3,
+                "nodes_generated": 5,
+            },
+            {
+                "algorithm": "UCS",
+                "feasible": True,
+                "route_cost_minutes": 40.0,
+                "nodes_expanded": 4,
+                "nodes_generated": 6,
+            },
+            {
+                "algorithm": "Greedy",
+                "feasible": True,
+                "route_cost_minutes": 45.0,
+                "nodes_expanded": 2,
+                "nodes_generated": 3,
+            },
+        ],
         "planning_attempts": [
             {
                 "number": 1,
@@ -72,14 +100,32 @@ def test_presentation_contains_walkthrough_and_escapes_zone_names():
         "suggestions": [],
     })
 
-    assert "Data &amp; model" in html
+    assert "The full solution in five steps" in html
+    assert "Prepare trip data" in html
+    assert "Predict travel minutes" in html
+    assert "CSP picks vans" in html
+    assert "A* plans stops" in html
+    assert "Repair conflicts" in html
+    assert "The NN learns patterns from the training trips" in html
     assert "Generated order scenario" in html
-    assert "Constraint-based assignment" in html
-    assert "Route schedule and what it means" in html
+    assert "Step 4 · CSP assigns orders to vans" in html
+    assert "Search comparison" in html
+    assert "Step 5 · Compare route-search methods" in html
+    assert "same final van assignments" in html
+    assert "A* · cost so far + estimate" in html
+    assert "UCS · cost so far" in html
+    assert "Greedy · estimate first" in html
+    assert "45.0 min" in html
+    assert "Step 6 · Read the route schedule" in html
     assert "MAE" in html
-    assert "Assignment and route-replanning cycles" in html
+    assert "RMSE" in html
+    assert "Van options removed" in html
+    assert "One node means the solver examined one partial van plan." in html
+    assert "Assignment and route-replanning attempts" in html
     assert "O01 ↔ O02" in html
-    assert "2 total across all assignment attempts" in html
+    assert "2 backtracks summed across all assignment attempts." in html
     assert "09:00" in html
+    assert "Presenter notes" not in html
+    assert 'class="speaker"' not in html
     assert "<script>alert" not in html
     assert "&lt;script&gt;" in html

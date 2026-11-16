@@ -1,5 +1,5 @@
 from csp.assignment import AssignmentSolver
-from integration.types import Order
+from integration.models import Order
 
 
 def _short_travel(first: int, second: int, hour: float, weekday: int) -> float:
@@ -82,6 +82,7 @@ def test_unreachable_window_is_an_impossible_case():
     assert not result.feasible
     assert result.reason is not None
     assert "no solution" in result.reason.lower()
+    assert "cannot be served from the depot" in result.reason
 
 
 def test_demand_above_every_capacity_is_an_impossible_case():
@@ -90,7 +91,10 @@ def test_demand_above_every_capacity_is_an_impossible_case():
         [order], {"V1": 2, "V2": 2}, 1, 0, _short_travel
     ).solve()
     assert not result.feasible
+    assert result.reason is not None
     assert "no solution" in result.reason.lower()
+    assert "requires 3 capacity units" in result.reason
+    assert "largest van capacity is 2" in result.reason
 
 
 def test_backtracking_detects_single_van_pair_conflict():
